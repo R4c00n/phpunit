@@ -9,6 +9,11 @@
  */
 namespace PHPUnit\Framework;
 
+use PHPUnit\TestFixture\DoNotContributeToCodeCoverageTestCase;
+use SebastianBergmann\CodeCoverage\CodeCoverage;
+use SebastianBergmann\CodeCoverage\Driver\Driver;
+use SebastianBergmann\CodeCoverage\Filter;
+use SebastianBergmann\CodeCoverage\RawCodeCoverageData;
 use const E_USER_DEPRECATED;
 use const E_USER_ERROR;
 use const E_USER_NOTICE;
@@ -561,6 +566,22 @@ class TestCaseTest extends TestCase
 
         $this->assertEquals(0, $result->riskyCount());
         $this->assertCount(1, $result);
+    }
+
+    public function testDoesNotContributeToCodeCoverage(): void
+    {
+        $test = new DoNotContributeToCodeCoverageTestCase('testCheating');
+        $result = new TestResult();
+        $codeCoverageDriver = $this->createMock(Driver::class); // @todo Fake
+        $codeCoverageDriver->method('stop')->willReturn(RawCodeCoverageData::fromXdebugWithoutPathCoverage([]));
+        $result->setCodeCoverage(
+            new CodeCoverage($codeCoverageDriver, new Filter())
+        );
+        // $test->expectNotToPerformAssertions(); @todo ?!
+
+        $result = $test->run($result);
+
+        $this->assertEquals(1, $result->riskyCount());
     }
 
     /**

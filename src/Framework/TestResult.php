@@ -679,7 +679,13 @@ final class TestResult implements Countable
                                !$test instanceof WarningTestCase &&
                                $isAnyCoverageRequired;
 
+        $percentageOfTestedClassesAndTraitsBeforeTestRun = null;
+        $percentageOfTestedFunctionsAndMethodsBeforeTestRun = null;
+
         if ($collectCodeCoverage) {
+            $codeCoverageReport = $this->codeCoverage->getReport();
+            $percentageOfTestedClassesAndTraitsBeforeTestRun = $codeCoverageReport->percentageOfTestedClassesAndTraits()->asFloat();
+            $percentageOfTestedFunctionsAndMethodsBeforeTestRun = $codeCoverageReport->percentageOfTestedFunctionsAndMethods()->asFloat();
             $this->codeCoverage->start($test);
         }
 
@@ -830,6 +836,24 @@ final class TestResult implements Countable
         }
 
         if ($collectCodeCoverage) {
+            $codeCoverageReport = $this->codeCoverage->getReport();
+            $percentageOfTestedClassesAndTraitsAfterTestRun = $codeCoverageReport->percentageOfTestedClassesAndTraits()->asFloat();
+            $percentageOfTestedFunctionsAndMethodsAfterTestRun = $codeCoverageReport->percentageOfTestedFunctionsAndMethods()->asFloat();
+
+            if (($percentageOfTestedClassesAndTraitsAfterTestRun <= $percentageOfTestedClassesAndTraitsBeforeTestRun)
+                || ($percentageOfTestedFunctionsAndMethodsAfterTestRun <= $percentageOfTestedFunctionsAndMethodsBeforeTestRun)){
+                $this->addFailure(
+                    $test,
+                    new RiskyTestError(
+                        sprintf(
+                            'Test %s did not contribute to the code coverage.',
+                            $test->getName()
+                        )
+                    ),
+                    $time
+                );
+            }
+
             $append           = !$risky && !$incomplete && !$skipped;
             $linesToBeCovered = [];
             $linesToBeUsed    = [];
