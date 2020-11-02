@@ -680,12 +680,14 @@ final class TestResult implements Countable
                                $isAnyCoverageRequired;
 
         $percentageOfTestedClassesAndTraitsBeforeTestRun = null;
+        $percentageOfExecutedLinesBeforeTestRun = null;
         $percentageOfTestedFunctionsAndMethodsBeforeTestRun = null;
 
         if ($collectCodeCoverage) {
             $codeCoverageReport = $this->codeCoverage->getReport();
             $percentageOfTestedClassesAndTraitsBeforeTestRun = $codeCoverageReport->percentageOfTestedClassesAndTraits()->asFloat();
             $percentageOfTestedFunctionsAndMethodsBeforeTestRun = $codeCoverageReport->percentageOfTestedFunctionsAndMethods()->asFloat();
+            $percentageOfExecutedLinesBeforeTestRun = $this->codeCoverage->getReport()->percentageOfExecutedLines()->asFloat();
             $this->codeCoverage->start($test);
         }
 
@@ -836,29 +838,6 @@ final class TestResult implements Countable
         }
 
         if ($collectCodeCoverage) {
-            $codeCoverageReport = $this->codeCoverage->getReport();
-            $percentageOfTestedClassesAndTraitsAfterTestRun = $codeCoverageReport->percentageOfTestedClassesAndTraits()->asFloat();
-            $percentageOfTestedFunctionsAndMethodsAfterTestRun = $codeCoverageReport->percentageOfTestedFunctionsAndMethods()->asFloat();
-
-            if (($percentageOfTestedClassesAndTraitsAfterTestRun <= $percentageOfTestedClassesAndTraitsBeforeTestRun)
-                || ($percentageOfTestedFunctionsAndMethodsAfterTestRun <= $percentageOfTestedFunctionsAndMethodsBeforeTestRun)){
-                $annotations = $test->getAnnotations();
-
-                if (!isset($annotations['class']['coversNothing']) &&
-                    !isset($annotations['method']['coversNothing'])) {
-                    $this->addFailure(
-                        $test,
-                        new RiskyTestError(
-                            sprintf(
-                                'Test %s did not contribute to the code coverage.',
-                                $test->getName()
-                            )
-                        ),
-                        $time
-                    );
-                }
-            }
-
             $append           = !$risky && !$incomplete && !$skipped;
             $linesToBeCovered = [];
             $linesToBeUsed    = [];
@@ -891,6 +870,31 @@ final class TestResult implements Countable
                     $linesToBeCovered,
                     $linesToBeUsed
                 );
+
+                $codeCoverageReport = $this->codeCoverage->getReport();
+                $percentageOfExecutedLinesAfterTestRun = $this->codeCoverage->getReport()->percentageOfExecutedLines()->asFloat();
+                $percentageOfTestedClassesAndTraitsAfterTestRun = $codeCoverageReport->percentageOfTestedClassesAndTraits()->asFloat();
+                $percentageOfTestedFunctionsAndMethodsAfterTestRun = $codeCoverageReport->percentageOfTestedFunctionsAndMethods()->asFloat();
+
+                if (($percentageOfTestedClassesAndTraitsAfterTestRun <= $percentageOfTestedClassesAndTraitsBeforeTestRun)
+                    && ($percentageOfTestedFunctionsAndMethodsAfterTestRun <= $percentageOfTestedFunctionsAndMethodsBeforeTestRun)
+                    && ($percentageOfExecutedLinesAfterTestRun <= $percentageOfExecutedLinesBeforeTestRun)){
+                    $annotations = $test->getAnnotations();
+
+                    if (!isset($annotations['class']['coversNothing']) &&
+                        !isset($annotations['method']['coversNothing'])) {
+                        $this->addFailure(
+                            $test,
+                            new RiskyTestError(
+                                sprintf(
+                                    'Test %s did not contribute to the code coverage.',
+                                    $test->getName()
+                                )
+                            ),
+                            $time
+                        );
+                    }
+                }
             } catch (UnintentionallyCoveredCodeException $cce) {
                 $this->addFailure(
                     $test,
