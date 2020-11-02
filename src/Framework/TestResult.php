@@ -842,16 +842,21 @@ final class TestResult implements Countable
 
             if (($percentageOfTestedClassesAndTraitsAfterTestRun <= $percentageOfTestedClassesAndTraitsBeforeTestRun)
                 || ($percentageOfTestedFunctionsAndMethodsAfterTestRun <= $percentageOfTestedFunctionsAndMethodsBeforeTestRun)){
-                $this->addFailure(
-                    $test,
-                    new RiskyTestError(
-                        sprintf(
-                            'Test %s did not contribute to the code coverage.',
-                            $test->getName()
-                        )
-                    ),
-                    $time
-                );
+                $annotations = $test->getAnnotations();
+
+                if (!isset($annotations['class']['coversNothing']) &&
+                    !isset($annotations['method']['coversNothing'])) {
+                    $this->addFailure(
+                        $test,
+                        new RiskyTestError(
+                            sprintf(
+                                'Test %s did not contribute to the code coverage.',
+                                $test->getName()
+                            )
+                        ),
+                        $time
+                    );
+                }
             }
 
             $append           = !$risky && !$incomplete && !$skipped;
