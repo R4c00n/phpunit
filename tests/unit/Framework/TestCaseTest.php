@@ -577,7 +577,6 @@ class TestCaseTest extends TestCase
         $result->setCodeCoverage(
             new CodeCoverage($codeCoverageDriver, new Filter())
         );
-        // $test->expectNotToPerformAssertions(); @todo ?!
 
         $result = $test->run($result);
 
